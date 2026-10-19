@@ -15,11 +15,23 @@ const nav = [
   { id: "fahrlehrer", label: "Fahrlehrer", icon: "◉" },
   { id: "nachrichten", label: "Nachrichten", icon: "◇", badge: 3 },
   { id: "formulare", label: "Formularcenter", icon: "▥" },
-  { id: "finanzen", label: "Finanzen", icon: "◆" },
+  {
+    id: "finanzen", label: "Finanzen", icon: "◆",
+    unterpunkte: [
+      { id: "finanzen-zahlungen", label: "Zahlungen" },
+      { id: "finanzen-mahnwesen", label: "Mahnwesen" },
+    ]
+  },
 ];
 
 export default function Home() {
   const [aktiv, setAktiv] = useState("dashboard");
+
+  const istFinanzen = aktiv.startsWith("finanzen");
+
+  const finanzenTab =
+    aktiv === "finanzen-zahlungen" ? "zahlungen" :
+    aktiv === "finanzen-mahnwesen" ? "mahnwesen" : "uebersicht";
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#FAFAF9", fontFamily: "'Inter', sans-serif" }}>
@@ -37,30 +49,66 @@ export default function Home() {
         </div>
 
         <nav style={{ marginTop: 20, flex: 1, padding: "0 12px", overflow: "auto" }}>
-          {nav.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => setAktiv(item.id)}
-              style={{
-                padding: "11px 16px", marginBottom: 2, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 12,
-                fontSize: 14, fontWeight: 500, borderRadius: 8,
-                background: aktiv === item.id ? "#F5F5F4" : "transparent",
-                color: aktiv === item.id ? "#1C1C1E" : "#B8B8BA",
-                transition: "all 0.15s",
-              }}
-            >
-              <span style={{ fontSize: 13, opacity: 0.8 }}>{item.icon}</span>
-              {item.label}
-              {item.badge && (
-                <span style={{
-                  marginLeft: "auto", background: "#D4AF37", color: "#1C1C1E",
-                  borderRadius: 999, minWidth: 18, height: 18, fontSize: 10.5, fontWeight: 700,
-                  display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px"
-                }}>{item.badge}</span>
-              )}
-            </div>
-          ))}
+          {nav.map((item) => {
+            const istAktiv = item.unterpunkte ? istFinanzen : aktiv === item.id;
+            return (
+              <div key={item.id}>
+                <div
+                  onClick={() => setAktiv(item.id)}
+                  style={{
+                    padding: "11px 16px", marginBottom: 2, cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 12,
+                    fontSize: 14, fontWeight: 500, borderRadius: 8,
+                    background: aktiv === item.id ? "#F5F5F4" : "transparent",
+                    color: aktiv === item.id ? "#1C1C1E" : istAktiv ? "#F5F5F4" : "#B8B8BA",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: 13, opacity: 0.8 }}>{item.icon}</span>
+                  {item.label}
+                  {item.badge && (
+                    <span style={{
+                      marginLeft: "auto", background: "#D4AF37", color: "#1C1C1E",
+                      borderRadius: 999, minWidth: 18, height: 18, fontSize: 10.5, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px"
+                    }}>{item.badge}</span>
+                  )}
+                  {item.unterpunkte && (
+                    <span style={{ marginLeft: "auto", fontSize: 9, opacity: 0.5 }}>
+                      {istFinanzen ? "▲" : "▼"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Unterpunkte */}
+                {item.unterpunkte && istFinanzen && (
+                  <div style={{ marginBottom: 6 }}>
+                    {item.unterpunkte.map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => setAktiv(u.id)}
+                        style={{
+                          padding: "9px 16px 9px 42px", marginBottom: 2, cursor: "pointer",
+                          fontSize: 13, fontWeight: 500, borderRadius: 8,
+                          background: aktiv === u.id ? "#F5F5F4" : "transparent",
+                          color: aktiv === u.id ? "#1C1C1E" : "#8A8A8D",
+                          transition: "all 0.15s",
+                          position: "relative",
+                        }}
+                      >
+                        <span style={{
+                          position: "absolute", left: 26, top: "50%", transform: "translateY(-50%)",
+                          width: 5, height: 5, borderRadius: "50%",
+                          background: aktiv === u.id ? "#D4AF37" : "#4A4A4C"
+                        }} />
+                        {u.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div style={{ padding: "16px 24px", borderTop: "1px solid #2E2E30", display: "flex", alignItems: "center", gap: 10 }}>
@@ -80,7 +128,7 @@ export default function Home() {
         {aktiv === "fahrlehrer" && <Fahrlehrer />}
         {aktiv === "nachrichten" && <Nachrichten />}
         {aktiv === "formulare" && <Formularcenter />}
-        {aktiv === "finanzen" && <Finanzen />}
+        {istFinanzen && <Finanzen bereich={finanzenTab} />}
       </div>
     </div>
   );

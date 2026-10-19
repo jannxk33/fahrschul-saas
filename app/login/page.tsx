@@ -1,138 +1,139 @@
 "use client";
 import { useState } from "react";
+import Dashboard from "./components/Dashboard";
+import Kalender from "./components/Kalender";
+import Schueler from "./components/Schueler";
+import Nachrichten from "./components/Nachrichten";
+import Finanzen from "./components/Finanzen";
+import Fahrlehrer from "./components/Fahrlehrer";
+import Formularcenter from "./components/Formularcenter";
+import Fahrzeuge from "./components/Fahrzeuge";
+import Theorie from "./components/Theorie";
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [passwort, setPasswort] = useState("");
-  const [laden, setLaden] = useState(false);
+const nav = [
+  { id: "dashboard", label: "Dashboard", icon: "▢" },
+  { id: "kalender", label: "Kalender", icon: "▤", badge: 3 },
+  { id: "schueler", label: "Schüler", icon: "◐" },
+  { id: "fahrlehrer", label: "Fahrlehrer", icon: "◉" },
+  { id: "theorie", label: "Theorie", icon: "▦" },
+  { id: "fahrzeuge", label: "Fahrzeuge", icon: "⬡" },
+  { id: "nachrichten", label: "Nachrichten", icon: "◇", badge: 3 },
+  { id: "formulare", label: "Formularcenter", icon: "▥" },
+  {
+    id: "finanzen", label: "Finanzen", icon: "◆",
+    unterpunkte: [
+      { id: "finanzen-zahlungen", label: "Zahlungen" },
+      { id: "finanzen-mahnwesen", label: "Mahnwesen" },
+    ]
+  },
+];
 
-  const handleLogin = () => {
-    setLaden(true);
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 1500);
-  };
+export default function Home() {
+  const [aktiv, setAktiv] = useState("dashboard");
+
+  const istFinanzen = aktiv.startsWith("finanzen");
+
+  const finanzenTab =
+    aktiv === "finanzen-zahlungen" ? "zahlungen" :
+    aktiv === "finanzen-mahnwesen" ? "mahnwesen" : "uebersicht";
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "sans-serif",
-      padding: 20,
-    }}>
-      <div style={{ width: "100%", maxWidth: 420 }}>
+    <div style={{ display: "flex", height: "100vh", background: "#FAFAF9", fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+        .display { font-family: 'Space Grotesk', sans-serif; }
+        * { box-sizing: border-box; }
+      `}</style>
 
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{
-            fontSize: 36,
-            fontWeight: "bold",
-            color: "#4f8ef7",
-            letterSpacing: -1,
-          }}>DriveOS</div>
-          <div style={{ color: "#888", fontSize: 14, marginTop: 6 }}>
-            Das digitale Fahrschul-System
-          </div>
+      {/* Sidebar */}
+      <div style={{ width: 240, background: "#1C1C1E", color: "#F5F5F4", display: "flex", flexDirection: "column", padding: "28px 0", flexShrink: 0 }}>
+        <div style={{ padding: "0 24px 28px", borderBottom: "1px solid #2E2E30" }}>
+          <div className="display" style={{ fontSize: 22, fontWeight: 700, color: "#D4AF37", letterSpacing: -0.5 }}>lenkio</div>
+          <div style={{ fontSize: 11, color: "#8A8A8D", marginTop: 4, letterSpacing: 1 }}>FAHRSCHUL-SOFTWARE</div>
         </div>
 
-        {/* Login Box */}
-        <div style={{
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 16,
-          padding: 40,
-          backdropFilter: "blur(10px)",
-        }}>
-          <h2 style={{ color: "white", fontSize: 20, fontWeight: 600, marginBottom: 8, marginTop: 0 }}>
-            Willkommen zurück
-          </h2>
-          <p style={{ color: "#888", fontSize: 14, marginBottom: 28, marginTop: 0 }}>
-            Melde dich mit deinen Zugangsdaten an.
-          </p>
+        <nav style={{ marginTop: 20, flex: 1, padding: "0 12px", overflow: "auto" }}>
+          {nav.map((item) => {
+            const istAktiv = item.unterpunkte ? istFinanzen : aktiv === item.id;
+            return (
+              <div key={item.id}>
+                <div
+                  onClick={() => setAktiv(item.id)}
+                  style={{
+                    padding: "11px 16px", marginBottom: 2, cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 12,
+                    fontSize: 14, fontWeight: 500, borderRadius: 8,
+                    background: aktiv === item.id ? "#F5F5F4" : "transparent",
+                    color: aktiv === item.id ? "#1C1C1E" : istAktiv ? "#F5F5F4" : "#B8B8BA",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: 13, opacity: 0.8 }}>{item.icon}</span>
+                  {item.label}
+                  {item.badge && (
+                    <span style={{
+                      marginLeft: "auto", background: "#D4AF37", color: "#1C1C1E",
+                      borderRadius: 999, minWidth: 18, height: 18, fontSize: 10.5, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px"
+                    }}>{item.badge}</span>
+                  )}
+                  {item.unterpunkte && (
+                    <span style={{ marginLeft: "auto", fontSize: 9, opacity: 0.5 }}>
+                      {istFinanzen ? "▲" : "▼"}
+                    </span>
+                  )}
+                </div>
 
-          {/* Email */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", color: "#ccc", fontSize: 13, marginBottom: 8, fontWeight: 500 }}>
-              E-Mail Adresse
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="fahrschule@beispiel.de"
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 10,
-                color: "white",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
+                {item.unterpunkte && istFinanzen && (
+                  <div style={{ marginBottom: 6 }}>
+                    {item.unterpunkte.map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => setAktiv(u.id)}
+                        style={{
+                          padding: "9px 16px 9px 42px", marginBottom: 2, cursor: "pointer",
+                          fontSize: 13, fontWeight: 500, borderRadius: 8,
+                          background: aktiv === u.id ? "#F5F5F4" : "transparent",
+                          color: aktiv === u.id ? "#1C1C1E" : "#8A8A8D",
+                          transition: "all 0.15s",
+                          position: "relative",
+                        }}
+                      >
+                        <span style={{
+                          position: "absolute", left: 26, top: "50%", transform: "translateY(-50%)",
+                          width: 5, height: 5, borderRadius: "50%",
+                          background: aktiv === u.id ? "#D4AF37" : "#4A4A4C"
+                        }} />
+                        {u.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
 
-          {/* Passwort */}
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", color: "#ccc", fontSize: 13, marginBottom: 8, fontWeight: 500 }}>
-              Passwort
-            </label>
-            <input
-              type="password"
-              value={passwort}
-              onChange={(e) => setPasswort(e.target.value)}
-              placeholder="••••••••"
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 10,
-                color: "white",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-
-          {/* Button */}
-          <button
-            onClick={handleLogin}
-            style={{
-              width: "100%",
-              padding: "13px",
-              background: laden ? "#2a5cd4" : "#4f8ef7",
-              color: "white",
-              border: "none",
-              borderRadius: 10,
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: laden ? "not-allowed" : "pointer",
-              transition: "background 0.2s",
-            }}
-          >
-            {laden ? "Wird angemeldet..." : "Anmelden"}
-          </button>
-
-          {/* Passwort vergessen */}
-          <div style={{ textAlign: "center", marginTop: 20 }}>
-            <span style={{ color: "#4f8ef7", fontSize: 13, cursor: "pointer" }}>
-              Passwort vergessen?
-            </span>
+        <div style={{ padding: "16px 24px", borderTop: "1px solid #2E2E30", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#D4AF37", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: "#1C1C1E" }}>FM</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>Fahrschule Muster</div>
+            <div style={{ fontSize: 11, color: "#8A8A8D" }}>Inhaber</div>
           </div>
         </div>
+      </div>
 
-        {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: 24, color: "#555", fontSize: 12 }}>
-          © 2026 DriveOS · Alle Rechte vorbehalten
-        </div>
-
+      {/* Inhalt */}
+      <div style={{ flex: 1, overflow: "auto", minWidth: 0 }}>
+        {aktiv === "dashboard" && <Dashboard onNavigate={setAktiv} />}
+        {aktiv === "kalender" && <Kalender />}
+        {aktiv === "schueler" && <Schueler />}
+        {aktiv === "fahrlehrer" && <Fahrlehrer />}
+        {aktiv === "theorie" && <Theorie />}
+        {aktiv === "fahrzeuge" && <Fahrzeuge />}
+        {aktiv === "nachrichten" && <Nachrichten />}
+        {aktiv === "formulare" && <Formularcenter />}
+        {istFinanzen && <Finanzen bereich={finanzenTab} />}
       </div>
     </div>
   );

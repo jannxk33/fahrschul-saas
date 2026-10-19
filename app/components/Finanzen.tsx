@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const monatsUmsatz = [
   { monat: "Jan", wert: 8400 }, { monat: "Feb", wert: 9200 }, { monat: "Mär", wert: 11800 },
@@ -7,9 +7,10 @@ const monatsUmsatz = [
 ];
 
 const offenePosten = [
-  { name: "Anna Müller", kundennr: "FS-2026-0156", betrag: 340, faellig: "28.05.2026", tage: 9, mahnstufe: 1 },
-  { name: "Lisa Schmidt", kundennr: "FS-2026-0138", betrag: 160, faellig: "04.06.2026", tage: 2, mahnstufe: 0 },
-  { name: "Jonas Weber", kundennr: "FS-2026-0148", betrag: 480, faellig: "15.05.2026", tage: 22, mahnstufe: 2 },
+  { name: "Anna Müller", kundennr: "FS-2026-0156", betrag: 340, faellig: "28.05.2026", tage: 9, mahnstufe: 1, letzteAktion: "1. Mahnung am 04.06." },
+  { name: "Lisa Schmidt", kundennr: "FS-2026-0138", betrag: 160, faellig: "04.06.2026", tage: 2, mahnstufe: 0, letzteAktion: "Noch keine Mahnung" },
+  { name: "Jonas Weber", kundennr: "FS-2026-0148", betrag: 480, faellig: "15.05.2026", tage: 22, mahnstufe: 2, letzteAktion: "2. Mahnung am 02.06." },
+  { name: "Sarah Klein", kundennr: "FS-2026-0151", betrag: 220, faellig: "20.05.2026", tage: 17, mahnstufe: 1, letzteAktion: "1. Mahnung am 30.05." },
 ];
 
 const zahlungen = [
@@ -28,8 +29,15 @@ const rechnungen = [
   { nr: "RE-2026-0227", name: "Paul Krause", betrag: 240, datum: "22.05.2026", status: "Bezahlt" },
 ];
 
-export default function Finanzen() {
-  const [tab, setTab] = useState<"uebersicht" | "offen" | "zahlungen" | "rechnungen">("uebersicht");
+const mahnEinstellungen = [
+  { stufe: "Zahlungserinnerung", tage: 7, gebuehr: 0, aktiv: true },
+  { stufe: "1. Mahnung", tage: 14, gebuehr: 5, aktiv: true },
+  { stufe: "2. Mahnung", tage: 21, gebuehr: 10, aktiv: true },
+  { stufe: "Letzte Mahnung", tage: 30, gebuehr: 15, aktiv: false },
+];
+
+export default function Finanzen({ bereich = "uebersicht" }: { bereich?: string }) {
+  const [zahlungsTab, setZahlungsTab] = useState<"eingaenge" | "rechnungen">("eingaenge");
   const maxUmsatz = Math.max(...monatsUmsatz.map(m => m.wert));
 
   const statusStyle = (s: string) => {
@@ -38,62 +46,53 @@ export default function Finanzen() {
     return { bg: "#FEF2F2", color: "#DC2626" };
   };
 
+  const titel =
+    bereich === "zahlungen" ? "Zahlungen" :
+    bereich === "mahnwesen" ? "Mahnwesen" : "Finanzen";
+
+  const untertitel =
+    bereich === "zahlungen" ? "Zahlungseingänge und Rechnungen" :
+    bereich === "mahnwesen" ? "Offene Posten und Mahnstufen" :
+    "Juni 2026 · Nur für Inhaber sichtbar";
+
   return (
     <div style={{ padding: "36px 40px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
         <div>
-          <h1 className="display" style={{ fontSize: 26, fontWeight: 600, marginBottom: 4, color: "#1C1C1E" }}>Finanzen</h1>
-          <p style={{ color: "#8A8A8D", fontSize: 14 }}>Juni 2026 · Nur für Inhaber sichtbar</p>
+          <h1 className="display" style={{ fontSize: 26, fontWeight: 600, marginBottom: 4, color: "#1C1C1E" }}>{titel}</h1>
+          <p style={{ color: "#8A8A8D", fontSize: 14 }}>{untertitel}</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button style={{ background: "white", color: "#1C1C1E", border: "1px solid #EDEDEB", borderRadius: 8, padding: "11px 18px", cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
             Export
           </button>
           <button style={{ background: "#1C1C1E", color: "white", border: "none", borderRadius: 8, padding: "11px 20px", cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
-            + Rechnung erstellen
+            {bereich === "mahnwesen" ? "+ Mahnung erstellen" : "+ Rechnung erstellen"}
           </button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
-        {[
-          { label: "Umsatz diesen Monat", wert: "7.300 €", sub: "+12% ggü. Vormonat", gold: true },
-          { label: "Offene Beträge", wert: "980 €", sub: "3 Schüler", warn: true },
-          { label: "Zahlungseingänge", wert: "1.600 €", sub: "diese Woche" },
-          { label: "Durchschnitt / Schüler", wert: "1.418 €", sub: "über alle Aktiven" },
-        ].map((k) => (
-          <div key={k.label} style={{
-            background: "white", borderRadius: 10, padding: "20px 22px", border: "1px solid #EDEDEB",
-            borderLeft: k.gold ? "3px solid #D4AF37" : k.warn ? "3px solid #DC2626" : "3px solid #1C1C1E"
-          }}>
-            <div className="display" style={{ fontSize: 26, fontWeight: 700, color: k.gold ? "#B8860B" : k.warn ? "#DC2626" : "#1C1C1E" }}>{k.wert}</div>
-            <div style={{ fontSize: 12.5, color: "#8A8A8D", marginTop: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 11.5, color: "#B0B0AE", marginTop: 2 }}>{k.sub}</div>
+      {/* ===================== ÜBERSICHT ===================== */}
+      {bereich === "uebersicht" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+            {[
+              { label: "Umsatz diesen Monat", wert: "7.300 €", sub: "+12% ggü. Vormonat", gold: true },
+              { label: "Offene Beträge", wert: "1.200 €", sub: "4 Schüler", warn: true },
+              { label: "Zahlungseingänge", wert: "1.600 €", sub: "diese Woche" },
+              { label: "Durchschnitt / Schüler", wert: "1.418 €", sub: "über alle Aktiven" },
+            ].map((k) => (
+              <div key={k.label} style={{
+                background: "white", borderRadius: 10, padding: "20px 22px", border: "1px solid #EDEDEB",
+                borderLeft: k.gold ? "3px solid #D4AF37" : k.warn ? "3px solid #DC2626" : "3px solid #1C1C1E"
+              }}>
+                <div className="display" style={{ fontSize: 26, fontWeight: 700, color: k.gold ? "#B8860B" : k.warn ? "#DC2626" : "#1C1C1E" }}>{k.wert}</div>
+                <div style={{ fontSize: 12.5, color: "#8A8A8D", marginTop: 4 }}>{k.label}</div>
+                <div style={{ fontSize: 11.5, color: "#B0B0AE", marginTop: 2 }}>{k.sub}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 18, background: "white", border: "1px solid #EDEDEB", borderRadius: 8, padding: 4, width: "fit-content" }}>
-        {([
-          { id: "uebersicht", label: "Übersicht" },
-          { id: "offen", label: "Offene Posten" },
-          { id: "zahlungen", label: "Zahlungseingänge" },
-          { id: "rechnungen", label: "Rechnungen" },
-        ] as const).map((t) => (
-          <div
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            style={{
-              padding: "8px 18px", fontSize: 13.5, fontWeight: 500, cursor: "pointer", borderRadius: 6,
-              background: tab === t.id ? "#1C1C1E" : "transparent",
-              color: tab === t.id ? "white" : "#8A8A8D",
-            }}
-          >{t.label}</div>
-        ))}
-      </div>
-
-      {tab === "uebersicht" && (
-        <div>
           <div style={{ background: "white", borderRadius: 10, padding: 26, border: "1px solid #EDEDEB", marginBottom: 20 }}>
             <h2 className="display" style={{ fontSize: 15, fontWeight: 600, marginBottom: 24, color: "#1C1C1E" }}>Umsatzentwicklung 2026</h2>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 18, height: 200, paddingBottom: 8 }}>
@@ -153,90 +152,195 @@ export default function Finanzen() {
               ))}
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {tab === "offen" && (
-        <div style={{ background: "white", borderRadius: 10, border: "1px solid #EDEDEB", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#FAFAF9", borderBottom: "1px solid #EDEDEB" }}>
-                {["Schüler", "Betrag", "Fällig seit", "Mahnstufe", ""].map((h) => (
-                  <th key={h} style={{ padding: "13px 20px", textAlign: "left", fontSize: 11.5, color: "#8A8A8D", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {offenePosten.map((p) => (
-                <tr key={p.kundennr} style={{ borderTop: "1px solid #F2F2F0" }}>
-                  <td style={{ padding: "15px 20px" }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: "#1C1C1E" }}>{p.name}</div>
-                    <div style={{ fontSize: 11.5, color: "#8A8A8D" }}>{p.kundennr}</div>
-                  </td>
-                  <td style={{ padding: "15px 20px" }}>
-                    <span className="display" style={{ fontSize: 15, fontWeight: 700, color: "#DC2626" }}>{p.betrag} €</span>
-                  </td>
-                  <td style={{ padding: "15px 20px" }}>
-                    <div style={{ fontSize: 13, color: "#1C1C1E" }}>{p.faellig}</div>
-                    <div style={{ fontSize: 11.5, color: p.tage > 14 ? "#DC2626" : "#8A8A8D" }}>{p.tage} Tage überfällig</div>
-                  </td>
-                  <td style={{ padding: "15px 20px" }}>
-                    <span style={{
-                      background: p.mahnstufe === 0 ? "#F5F5F4" : p.mahnstufe === 1 ? "#FDF4E3" : "#FEF2F2",
-                      color: p.mahnstufe === 0 ? "#8A8A8D" : p.mahnstufe === 1 ? "#B8860B" : "#DC2626",
-                      borderRadius: 6, padding: "4px 11px", fontSize: 12, fontWeight: 500
-                    }}>
-                      {p.mahnstufe === 0 ? "Keine" : `${p.mahnstufe}. Mahnung`}
-                    </span>
-                  </td>
-                  <td style={{ padding: "15px 20px", textAlign: "right" }}>
-                    <span style={{ fontSize: 12.5, color: "#B8860B", cursor: "pointer", fontWeight: 500 }}>Erinnerung senden</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === "zahlungen" && (
-        <div>
-          <div style={{ background: "#FDF4E3", borderRadius: 10, padding: "14px 20px", marginBottom: 16, borderLeft: "3px solid #D4AF37", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: "#B8860B" }}>1 Zahlung nicht zugeordnet</div>
-              <div style={{ fontSize: 12.5, color: "#1C1C1E", marginTop: 2 }}>Keine Kundennummer im Verwendungszweck gefunden</div>
-            </div>
-            <button style={{ background: "#1C1C1E", color: "white", border: "none", borderRadius: 7, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-              Jetzt zuordnen
-            </button>
+      {/* ===================== ZAHLUNGEN ===================== */}
+      {bereich === "zahlungen" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 22 }}>
+            {[
+              { label: "Eingänge diese Woche", wert: "1.600 €", gold: true },
+              { label: "Nicht zugeordnet", wert: "1", warn: true },
+              { label: "Rechnungen offen", wert: "2" },
+            ].map((k) => (
+              <div key={k.label} style={{
+                background: "white", borderRadius: 10, padding: "20px 22px", border: "1px solid #EDEDEB",
+                borderLeft: k.gold ? "3px solid #D4AF37" : k.warn ? "3px solid #DC2626" : "3px solid #1C1C1E"
+              }}>
+                <div className="display" style={{ fontSize: 26, fontWeight: 700, color: k.gold ? "#B8860B" : k.warn ? "#DC2626" : "#1C1C1E" }}>{k.wert}</div>
+                <div style={{ fontSize: 12.5, color: "#8A8A8D", marginTop: 4 }}>{k.label}</div>
+              </div>
+            ))}
           </div>
 
-          <div style={{ background: "white", borderRadius: 10, border: "1px solid #EDEDEB", overflow: "hidden" }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 18, background: "white", border: "1px solid #EDEDEB", borderRadius: 8, padding: 4, width: "fit-content" }}>
+            {([
+              { id: "eingaenge", label: "Zahlungseingänge" },
+              { id: "rechnungen", label: "Rechnungen" },
+            ] as const).map((t) => (
+              <div
+                key={t.id}
+                onClick={() => setZahlungsTab(t.id)}
+                style={{
+                  padding: "8px 18px", fontSize: 13.5, fontWeight: 500, cursor: "pointer", borderRadius: 6,
+                  background: zahlungsTab === t.id ? "#1C1C1E" : "transparent",
+                  color: zahlungsTab === t.id ? "white" : "#8A8A8D",
+                }}
+              >{t.label}</div>
+            ))}
+          </div>
+
+          {zahlungsTab === "eingaenge" && (
+            <>
+              <div style={{ background: "#FDF4E3", borderRadius: 10, padding: "14px 20px", marginBottom: 16, borderLeft: "3px solid #D4AF37", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#B8860B" }}>1 Zahlung nicht zugeordnet</div>
+                  <div style={{ fontSize: 12.5, color: "#1C1C1E", marginTop: 2 }}>Keine Kundennummer im Verwendungszweck gefunden</div>
+                </div>
+                <button style={{ background: "#1C1C1E", color: "white", border: "none", borderRadius: 7, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+                  Jetzt zuordnen
+                </button>
+              </div>
+
+              <div style={{ background: "white", borderRadius: 10, border: "1px solid #EDEDEB", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#FAFAF9", borderBottom: "1px solid #EDEDEB" }}>
+                      {["Schüler", "Kundennummer", "Betrag", "Datum", "Art", "Status"].map((h) => (
+                        <th key={h} style={{ padding: "13px 20px", textAlign: "left", fontSize: 11.5, color: "#8A8A8D", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {zahlungen.map((z, i) => (
+                      <tr key={i} style={{ borderTop: "1px solid #F2F2F0", background: z.zugeordnet ? "white" : "#FFFDF7" }}>
+                        <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 500, color: z.zugeordnet ? "#1C1C1E" : "#B8860B" }}>{z.name}</td>
+                        <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{z.kundennr}</td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <span className="display" style={{ fontSize: 14, fontWeight: 700, color: "#16A34A" }}>+{z.betrag} €</span>
+                        </td>
+                        <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{z.datum}</td>
+                        <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{z.art}</td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <span style={{
+                            background: z.zugeordnet ? "#EAF7EE" : "#FDF4E3",
+                            color: z.zugeordnet ? "#16A34A" : "#B8860B",
+                            borderRadius: 6, padding: "4px 11px", fontSize: 12, fontWeight: 500
+                          }}>
+                            {z.zugeordnet ? "Zugeordnet" : "Offen"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {zahlungsTab === "rechnungen" && (
+            <div style={{ background: "white", borderRadius: 10, border: "1px solid #EDEDEB", overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#FAFAF9", borderBottom: "1px solid #EDEDEB" }}>
+                    {["Rechnungsnr.", "Schüler", "Betrag", "Datum", "Status", ""].map((h) => (
+                      <th key={h} style={{ padding: "13px 20px", textAlign: "left", fontSize: 11.5, color: "#8A8A8D", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rechnungen.map((r) => {
+                    const st = statusStyle(r.status);
+                    return (
+                      <tr key={r.nr} style={{ borderTop: "1px solid #F2F2F0" }}>
+                        <td style={{ padding: "14px 20px" }}>
+                          <span className="display" style={{ fontSize: 13, fontWeight: 600, color: "#1C1C1E" }}>{r.nr}</span>
+                        </td>
+                        <td style={{ padding: "14px 20px", fontSize: 14, color: "#1C1C1E" }}>{r.name}</td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <span className="display" style={{ fontSize: 14, fontWeight: 700, color: "#1C1C1E" }}>{r.betrag} €</span>
+                        </td>
+                        <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{r.datum}</td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <span style={{ background: st.bg, color: st.color, borderRadius: 6, padding: "4px 11px", fontSize: 12, fontWeight: 500 }}>{r.status}</span>
+                        </td>
+                        <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                          <span style={{ fontSize: 12.5, color: "#B8860B", cursor: "pointer", fontWeight: 500 }}>PDF öffnen</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===================== MAHNWESEN ===================== */}
+      {bereich === "mahnwesen" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 22 }}>
+            {[
+              { label: "Offen gesamt", wert: "1.200 €", warn: true },
+              { label: "Ohne Mahnung", wert: "1", sub: "Schüler" },
+              { label: "1. Mahnstufe", wert: "2", sub: "Schüler" },
+              { label: "2. Mahnstufe", wert: "1", sub: "Schüler", warn: true },
+            ].map((k) => (
+              <div key={k.label} style={{
+                background: "white", borderRadius: 10, padding: "20px 22px", border: "1px solid #EDEDEB",
+                borderLeft: k.warn ? "3px solid #DC2626" : "3px solid #1C1C1E"
+              }}>
+                <div className="display" style={{ fontSize: 26, fontWeight: 700, color: k.warn ? "#DC2626" : "#1C1C1E" }}>{k.wert}</div>
+                <div style={{ fontSize: 12.5, color: "#8A8A8D", marginTop: 4 }}>{k.label}</div>
+                {k.sub && <div style={{ fontSize: 11.5, color: "#B0B0AE", marginTop: 2 }}>{k.sub}</div>}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: "white", borderRadius: 10, border: "1px solid #EDEDEB", overflow: "hidden", marginBottom: 22 }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #EDEDEB", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 className="display" style={{ fontSize: 15, fontWeight: 600, color: "#1C1C1E" }}>Offene Posten</h2>
+              <button style={{ background: "white", color: "#1C1C1E", border: "1px solid #EDEDEB", borderRadius: 7, padding: "8px 14px", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                Alle mahnen
+              </button>
+            </div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#FAFAF9", borderBottom: "1px solid #EDEDEB" }}>
-                  {["Schüler", "Kundennummer", "Betrag", "Datum", "Art", "Status"].map((h) => (
+                  {["Schüler", "Betrag", "Fällig seit", "Mahnstufe", "Letzte Aktion", ""].map((h) => (
                     <th key={h} style={{ padding: "13px 20px", textAlign: "left", fontSize: 11.5, color: "#8A8A8D", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {zahlungen.map((z, i) => (
-                  <tr key={i} style={{ borderTop: "1px solid #F2F2F0", background: z.zugeordnet ? "white" : "#FFFDF7" }}>
-                    <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 500, color: z.zugeordnet ? "#1C1C1E" : "#B8860B" }}>{z.name}</td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{z.kundennr}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span className="display" style={{ fontSize: 14, fontWeight: 700, color: "#16A34A" }}>+{z.betrag} €</span>
+                {offenePosten.map((p) => (
+                  <tr key={p.kundennr} style={{ borderTop: "1px solid #F2F2F0", background: p.mahnstufe >= 2 ? "#FFFCFC" : "white" }}>
+                    <td style={{ padding: "15px 20px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#1C1C1E" }}>{p.name}</div>
+                      <div style={{ fontSize: 11.5, color: "#8A8A8D" }}>{p.kundennr}</div>
                     </td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{z.datum}</td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{z.art}</td>
-                    <td style={{ padding: "14px 20px" }}>
+                    <td style={{ padding: "15px 20px" }}>
+                      <span className="display" style={{ fontSize: 15, fontWeight: 700, color: "#DC2626" }}>{p.betrag} €</span>
+                    </td>
+                    <td style={{ padding: "15px 20px" }}>
+                      <div style={{ fontSize: 13, color: "#1C1C1E" }}>{p.faellig}</div>
+                      <div style={{ fontSize: 11.5, color: p.tage > 14 ? "#DC2626" : "#8A8A8D" }}>{p.tage} Tage überfällig</div>
+                    </td>
+                    <td style={{ padding: "15px 20px" }}>
                       <span style={{
-                        background: z.zugeordnet ? "#EAF7EE" : "#FDF4E3",
-                        color: z.zugeordnet ? "#16A34A" : "#B8860B",
+                        background: p.mahnstufe === 0 ? "#F5F5F4" : p.mahnstufe === 1 ? "#FDF4E3" : "#FEF2F2",
+                        color: p.mahnstufe === 0 ? "#8A8A8D" : p.mahnstufe === 1 ? "#B8860B" : "#DC2626",
                         borderRadius: 6, padding: "4px 11px", fontSize: 12, fontWeight: 500
                       }}>
-                        {z.zugeordnet ? "Zugeordnet" : "Offen"}
+                        {p.mahnstufe === 0 ? "Keine" : `${p.mahnstufe}. Mahnung`}
+                      </span>
+                    </td>
+                    <td style={{ padding: "15px 20px", fontSize: 12.5, color: "#8A8A8D" }}>{p.letzteAktion}</td>
+                    <td style={{ padding: "15px 20px", textAlign: "right" }}>
+                      <span style={{ fontSize: 12.5, color: "#B8860B", cursor: "pointer", fontWeight: 500 }}>
+                        {p.mahnstufe === 0 ? "Erinnerung senden" : "Nächste Stufe"}
                       </span>
                     </td>
                   </tr>
@@ -244,44 +348,38 @@ export default function Finanzen() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
 
-      {tab === "rechnungen" && (
-        <div style={{ background: "white", borderRadius: 10, border: "1px solid #EDEDEB", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#FAFAF9", borderBottom: "1px solid #EDEDEB" }}>
-                {["Rechnungsnr.", "Schüler", "Betrag", "Datum", "Status", ""].map((h) => (
-                  <th key={h} style={{ padding: "13px 20px", textAlign: "left", fontSize: 11.5, color: "#8A8A8D", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rechnungen.map((r) => {
-                const st = statusStyle(r.status);
-                return (
-                  <tr key={r.nr} style={{ borderTop: "1px solid #F2F2F0" }}>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span className="display" style={{ fontSize: 13, fontWeight: 600, color: "#1C1C1E" }}>{r.nr}</span>
-                    </td>
-                    <td style={{ padding: "14px 20px", fontSize: 14, color: "#1C1C1E" }}>{r.name}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span className="display" style={{ fontSize: 14, fontWeight: 700, color: "#1C1C1E" }}>{r.betrag} €</span>
-                    </td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#8A8A8D" }}>{r.datum}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span style={{ background: st.bg, color: st.color, borderRadius: 6, padding: "4px 11px", fontSize: 12, fontWeight: 500 }}>{r.status}</span>
-                    </td>
-                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                      <span style={{ fontSize: 12.5, color: "#B8860B", cursor: "pointer", fontWeight: 500 }}>PDF öffnen</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+          <div style={{ background: "white", borderRadius: 10, padding: 24, border: "1px solid #EDEDEB" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h2 className="display" style={{ fontSize: 15, fontWeight: 600, color: "#1C1C1E" }}>Automatisches Mahnwesen</h2>
+                <p style={{ fontSize: 12.5, color: "#8A8A8D", marginTop: 3 }}>Lenkio versendet Mahnungen automatisch nach diesen Regeln</p>
+              </div>
+              <span style={{ fontSize: 12.5, color: "#B8860B", cursor: "pointer", fontWeight: 500 }}>Bearbeiten</span>
+            </div>
+            {mahnEinstellungen.map((m) => (
+              <div key={m.stufe} style={{ display: "flex", alignItems: "center", padding: "13px 0", borderBottom: "1px solid #F2F2F0", gap: 16 }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: m.aktiv ? "#16A34A" : "#DEDEDC", flexShrink: 0
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 500, color: m.aktiv ? "#1C1C1E" : "#B0B0AE" }}>{m.stufe}</div>
+                  <div style={{ fontSize: 11.5, color: "#8A8A8D", marginTop: 2 }}>
+                    {m.tage} Tage nach Fälligkeit{m.gebuehr > 0 ? ` · ${m.gebuehr} € Mahngebühr` : " · keine Gebühr"}
+                  </div>
+                </div>
+                <span style={{
+                  background: m.aktiv ? "#EAF7EE" : "#F5F5F4",
+                  color: m.aktiv ? "#16A34A" : "#8A8A8D",
+                  borderRadius: 6, padding: "4px 11px", fontSize: 12, fontWeight: 500
+                }}>
+                  {m.aktiv ? "Aktiv" : "Inaktiv"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

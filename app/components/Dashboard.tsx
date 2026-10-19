@@ -19,21 +19,136 @@ const aktivitaeten = [
   { typ: "zahlung", text: "Anna Müller Zahlung überfällig (7 Tage)", zeit: "vor 3 Std" },
 ];
 
-const wochenVorschau = [
-  { tag: "Mo", datum: "08", stunden: 6 },
-  { tag: "Di", datum: "09", stunden: 8 },
-  { tag: "Mi", datum: "10", stunden: 5 },
-  { tag: "Do", datum: "11", stunden: 7 },
-  { tag: "Fr", datum: "12", stunden: 4 },
-  { tag: "Sa", datum: "13", stunden: 3 },
-  { tag: "So", datum: "14", stunden: 0 },
-];
-
 const aktivitaetIcon: Record<string, string> = { zahlung: "€", anmeldung: "＋", nachricht: "◇", termin: "▤" };
+
+// Daten je Zeitraum
+const diagrammDaten: Record<string, { labels: string[]; stunden: number[]; schueler: number[]; quote: number[] }> = {
+  "1": {
+    labels: ["KW 19", "KW 20", "KW 21", "KW 22"],
+    stunden: [28, 34, 31, 33],
+    schueler: [2, 3, 1, 4],
+    quote: [72, 78, 75, 81],
+  },
+  "3": {
+    labels: ["Apr", "Mai", "Jun"],
+    stunden: [118, 132, 126],
+    schueler: [7, 9, 6],
+    quote: [74, 79, 81],
+  },
+  "6": {
+    labels: ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun"],
+    stunden: [96, 104, 121, 118, 132, 126],
+    schueler: [5, 6, 8, 7, 9, 6],
+    quote: [68, 71, 76, 74, 79, 81],
+  },
+  "12": {
+    labels: ["Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "Jan", "Feb", "Mär", "Apr", "Mai", "Jun"],
+    stunden: [88, 92, 108, 114, 98, 82, 96, 104, 121, 118, 132, 126],
+    schueler: [4, 5, 7, 8, 6, 3, 5, 6, 8, 7, 9, 6],
+    quote: [64, 66, 70, 69, 72, 70, 68, 71, 76, 74, 79, 81],
+  },
+};
+
+function LinienDiagramm({ titel, labels, werte, farbe, einheit }: {
+  titel: string; labels: string[]; werte: number[]; farbe: string; einheit: string;
+}) {
+  const max = Math.max(...werte);
+  const min = Math.min(...werte);
+  const spanne = max - min || 1;
+  const breite = 100;
+  const hoehe = 100;
+
+  const punkte = werte.map((w, i) => {
+    const x = (i / (werte.length - 1)) * breite;
+    const y = hoehe - ((w - min) / spanne) * 70 - 15;
+    return { x, y, wert: w };
+  });
+
+  const linie = punkte.map(p => `${p.x},${p.y}`).join(" ");
+  const flaeche = `0,${hoehe} ${linie} ${breite},${hoehe}`;
+  const letzter = werte[werte.length - 1];
+  const vorletzter = werte[werte.length - 2] ?? letzter;
+  const trend = letzter - vorletzter;
+
+  return (
+    <div style={{ background: "white", borderRadius: 10, padding: 20, border: "1px solid #EDEDEB", borderLeft: `3px solid ${farbe}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 12.5, color: "#8A8A8D", marginBottom: 4 }}>{titel}</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span className="display" style={{ fontSize: 24, fontWeight: 700, color: "#1C1C1E" }}>
+              {letzter}{einheit}
+            </span>
+            <span style={{
+              fontSize: 11.5, fontWeight: 600,
+              color: trend > 0 ? "#16A34A" : trend < 0 ? "#DC2626" : "#8A8A8D"
+            }}>
+              {trend > 0 ? "▲" : trend < 0 ? "▼" : "–"} {Math.abs(trend)}{einheit}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <svg viewBox={`0 0 ${breite} ${hoehe}`} preserveAspectRatio="none" style={{ width: "100%", height: 90, display: "block" }}>
+        <defs>
+          <linearGradient id={`grad-${titel.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={farbe} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={farbe} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={flaeche} fill={`url(#grad-${titel.replace(/\s/g, "")})`} />
+        <polyline
+          points={linie}
+          fill="none"
+          stroke={farbe}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        {punkte.map((p, i) => (
+          <circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r={i === punkte.length - 1 ? 3 : 0}
+            fill={farbe}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+      </svg>
+
+      {/* Zeitachse */}
+      <div style={{ marginTop: 6 }}>
+        <div style={{ height: 1, background: "#EDEDEB", marginBottom: 6 }} />
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          {labels.map((l, i) => (
+            <span
+              key={i}
+              style={{
+                fontSize: 10,
+                color: i === labels.length - 1 ? "#1C1C1E" : "#B0B0AE",
+                fontWeight: i === labels.length - 1 ? 600 : 400,
+                flex: 1,
+                textAlign: i === 0 ? "left" : i === labels.length - 1 ? "right" : "center",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {l}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const [lehrerFilter, setLehrerFilter] = useState("Alle Fahrlehrer");
   const [filterOffen, setFilterOffen] = useState(false);
+  const [zeitraum, setZeitraum] = useState("6");
+
+  const daten = diagrammDaten[zeitraum];
 
   const gefilteterAblauf = lehrerFilter === "Alle Fahrlehrer"
     ? tagesablauf
@@ -90,6 +205,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (id: string) =>
         </div>
       </div>
 
+      {/* Kennzahlen */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 14, marginBottom: 28 }}>
         {[
           { label: "Aktive Schüler", wert: "24" },
@@ -109,7 +225,58 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (id: string) =>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20, marginBottom: 24 }}>
+      {/* Diagramme mit Zeitraumwahl */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h2 className="display" style={{ fontSize: 15, fontWeight: 600, color: "#1C1C1E" }}>Entwicklung</h2>
+          <div style={{ display: "flex", background: "white", border: "1px solid #EDEDEB", borderRadius: 8, padding: 3 }}>
+            {[
+              { id: "1", label: "1 Monat" },
+              { id: "3", label: "3 Monate" },
+              { id: "6", label: "6 Monate" },
+              { id: "12", label: "12 Monate" },
+            ].map((z) => (
+              <div
+                key={z.id}
+                onClick={() => setZeitraum(z.id)}
+                style={{
+                  padding: "7px 14px", fontSize: 12.5, fontWeight: 500, cursor: "pointer", borderRadius: 6,
+                  background: zeitraum === z.id ? "#1C1C1E" : "transparent",
+                  color: zeitraum === z.id ? "white" : "#8A8A8D",
+                  transition: "all 0.15s",
+                }}
+              >{z.label}</div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <LinienDiagramm
+            titel="Fahrstunden"
+            labels={daten.labels}
+            werte={daten.stunden}
+            farbe="#1C1C1E"
+            einheit=""
+          />
+          <LinienDiagramm
+            titel="Neue Schüler"
+            labels={daten.labels}
+            werte={daten.schueler}
+            farbe="#D4AF37"
+            einheit=""
+          />
+          <LinienDiagramm
+            titel="Bestehensquote"
+            labels={daten.labels}
+            werte={daten.quote}
+            farbe="#16A34A"
+            einheit="%"
+          />
+        </div>
+      </div>
+
+      {/* Tagesablauf + Aktivitäten */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }}>
         <div style={{ background: "white", borderRadius: 10, padding: 24, border: "1px solid #EDEDEB" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
             <h2 className="display" style={{ fontSize: 15, fontWeight: 600, color: "#1C1C1E" }}>Heutiger Ablauf</h2>
@@ -141,32 +308,6 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (id: string) =>
               <div>
                 <div style={{ fontSize: 12.5, color: "#1C1C1E", lineHeight: 1.4 }}>{a.text}</div>
                 <div style={{ fontSize: 11, color: "#8A8A8D", marginTop: 2 }}>{a.zeit}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ background: "white", borderRadius: 10, padding: 24, border: "1px solid #EDEDEB" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h2 className="display" style={{ fontSize: 15, fontWeight: 600, color: "#1C1C1E" }}>Diese Woche</h2>
-          <span
-            onClick={() => onNavigate && onNavigate("kalender")}
-            style={{ fontSize: 12.5, color: "#B8860B", cursor: "pointer", fontWeight: 500 }}
-          >
-            Zum Kalender →
-          </span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
-          {wochenVorschau.map((w) => (
-            <div key={w.tag} style={{
-              background: "#FAFAF9", border: "1px solid #EDEDEB", borderRadius: 8,
-              padding: "14px 8px", textAlign: "center", cursor: "pointer"
-            }}>
-              <div style={{ fontSize: 11, color: "#8A8A8D", fontWeight: 500 }}>{w.tag}</div>
-              <div className="display" style={{ fontSize: 16, fontWeight: 700, color: "#1C1C1E", margin: "4px 0" }}>{w.datum}</div>
-              <div style={{ fontSize: 10.5, color: w.stunden === 0 ? "#C4C4C2" : "#B8860B", fontWeight: 500 }}>
-                {w.stunden === 0 ? "frei" : `${w.stunden} Std.`}
               </div>
             </div>
           ))}
